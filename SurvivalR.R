@@ -3,6 +3,8 @@ library(ggplot2) #loading visualizations
 library(dplyr)
 library(tidyr)
 library(caret)
+library(ranger) #trees and forests
+library(ROCR)
 
 ###importing dataset
 raw_data<-read.csv("//Vcn.ds.volvo.net/cli-hm/hm0226/a259842/My Documents/R/Projects/Survival Analysis On the Titanic DataSet/train.csv")
@@ -30,6 +32,7 @@ confusionMatrix[2,2]/(confusionMatrix[2,2]+confusionMatrix[1,2])
 rm(confusionMatrix)
 #Extra sample misclassification unable due to no labeled data -> cross validation or splitting of raw_data
 test_data<-read.csv("//Vcn.ds.volvo.net/cli-hm/hm0226/a259842/My Documents/R/Projects/Survival Analysis On the Titanic DataSet/test.csv")
+GainCurvePlot
 
 ####Early explanatory analysis ####
 
@@ -86,10 +89,12 @@ k=0
    if (is.na(x[i])){
      k=k+1
      x[i]<-y[k]
+     
    } 
  }
+return(x)
 }
-impute(train_data$Age, imputed.values)
+train_data$Age<-impute(train_data$Age, imputed.values)
 sum(is.na(train_data$Age)) #succesfull check
 #for now we will drop the variables PassengerId, Name, Ticket , Cabin and missing_age
 train_data<-train_data[,c("Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "pred")]
@@ -122,6 +127,23 @@ ggplot(train_data, aes(Survived,logFare))+geom_boxplot(aes(group=Survived))
 
 #### Machine learning algorithmes ####
 
+###logistic regression with K-fold and leave-one-out cross validation
+
+
+survival.glm<-glm(Survived~Pclass+Sex+Age+Fare+Embarked, data=train_data, family = binomial)
+cv.classification<-cv.glm(train_data,survival.glm)
+1-cv.classification$delta[1]
+survival.glm
+survival.glm.pred<-predict(survival.glm, type="response" )
+survival.glm.pred<-ifelse(survival.glm.pred<0.5,0,1)
+confusionMatrix<-table(survival.glm.pred, train_data$Survived)
+confusionMatrix[1,1]/(confusionMatrix[1,1]+confusionMatrix[2,1])
+
+### naive bayesian regression
+
+### random forest
+### gradient boosting of decision trees
+### support vector machine learning
 
 
 
