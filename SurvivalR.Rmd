@@ -1,0 +1,97 @@
+---
+title: "Titanic"
+author: "Lieven De Roo"
+date: "4 september 2017"
+output: pdf_document
+---
+This is a kernel with the sole purpose of training basics skills and sharing it to other people who are interested as well.
+The Titanic dataset is well know and many times over and over analyzed. So I doubt I will add something totally new.
+Again the main goal is to show all the basic steps done in a data science/statistics project and I will try to focus on 
+interpretation of results and numbers. I won't be showing the code everytime purely because the lines are trivial code. Also because I like to do repetitive coding since it sticks better afterwards in my head. Kaggle is mostly for learning anyways.
+Feel free to comment or add feedback.
+
+```{r, message=F}
+#### Loading Libraries####
+library(ggplot2) # Data visualization
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(dplyr) #handling and wrangling
+library(tidyr) #handling and wrangling
+library(caret) #regression and classification training
+library(ranger)#trees and forests
+library(mice)  #imputation and handling of missing data 
+
+```
+#Early/Exploratory Data Analysis
+We'll start by importing the dataset which has 891 obs. and 12 variables. There are 314 females and 577 males. Age seems to have a lot of missing values (177).
+Around 38% of the passengers survived the collision with the Iceberg but broken down in different groups we can clearly see some trends.
+Women have a much higher chance on surviving the Titanic than men, ~74% vs ~19%. If you look at the ticket class this is also very pronounced with a survival rate of almost 2 out of 3 passenger for the righest class while only one-fifth of the lowest economic class survived.   
+This becomes even more striking when we take sex conditionally on the survival rate of the economic classes. If you are a women that doesn't belong to the poorest class you will almost certainly survive.
+If you belong to the poorest class you have 50% chance. For men only the highest economic class has a elevated survival rate ~37% while it doesn't really matter if you are middle or low class.
+It is important to think through different trends and correlations in your data as these will affect your outcome and your methods.
+The price of ticket (Fare) is probably very correlated with your economic class. Next we investigate the relation between age and survival rate. In the graph we can see that there is a peak for sruvived children.
+We see a peak in deaths for the range 20-30. This can be because a lot are men and/or belonging to lower classes.
+These findings confirm expectations, common sense and my predjuces after seeing the movie Titanic with Dicaprio and Winslet.
+
+Women and children first! And of course the Rich...
+```{r, echo=F}
+###importing dataset
+raw_data<-read.csv("../input/train.csv")
+#Always good to have a summary. Should be everyones starting point.
+summary(raw_data)
+#pclass Ticket class a proxy for socio-economic status (1 upper->3 lower class)
+#SibSp A discrete variable for the relation to any siblings, brothers or sisters
+#Parch A discrete variable for the relation to the parents
+```
+```{r, message=F}
+raw_data %>%
+    group_by(Pclass) %>%
+    summarize(mean(Survived))
+raw_data %>%
+    group_by(Sex) %>%
+    summarize(mean(Survived))
+    
+raw_data %>%
+    group_by(Sex, Pclass) %>%
+    summarize(mean(Survived))
+    
+#Plotting survival rate vs Age
+ ggplot(raw_data, aes(Age, fill=as.character(Survived)))+
+ geom_histogram(aes(y=..density..), position='identity',alpha=0.8, na.rm=T)+
+ geom_density(alpha=0.5)
+
+
+```
+#Transformations, dealing with missing data and confounding/multicolinearity
+This paragraph deals with all kinds of disadvantages in our dataset.
+If you got income data or counts in your dataset you can be sure that the variable is right or positive skewed meaning you have a lot of small variables and very large but few ones.
+The tail to right is flat and long. A common practice to make it more normal distributed it to perform a logtransformation.
+
+
+```{r, message=F}
+par(mfrow=c(1,2))
+ggplot(raw_data, aes(Fare))+
+geom_density() +
+ggtitle("density of variable Fare")
+
+ggplot(raw_data, aes(log(Fare)))+
+geom_density() +
+ggtitle("logtransformed density of variable Fare")
+
+ggplot(raw_data, aes((Fare^-1)))+
+geom_density() +
+ggtitle("Inverse density of variable Fare")
+
+
+
+```
+
+Input data files are available in the "../input/" directory.
+
+For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
+
+```{r}
+system("ls ../input", intern=TRUE)
+```
+
+Any results you write to the current directory are saved as output.
+hell yeah
